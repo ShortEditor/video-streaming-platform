@@ -76,6 +76,30 @@ def upload():
     
     return render_template('upload.html')
 
+@app.route('/delete/<int:video_id>', methods=['POST'])
+@login_required
+def delete_video(video_id):
+    if not current_user.is_admin:
+        flash('Only admins can delete videos')
+        return redirect(url_for('index'))
+    
+    video = Video.query.get_or_404(video_id)
+    try:
+        # Delete the video file from uploads folder
+        video_path = os.path.join(app.config['UPLOAD_FOLDER'], video.filename)
+        if os.path.exists(video_path):
+            os.remove(video_path)
+        
+        # Delete the database entry
+        db.session.delete(video)
+        db.session.commit()
+        flash('Video deleted successfully!')
+    except Exception as e:
+        flash('Error deleting video: ' + str(e))
+        db.session.rollback()
+    
+    return redirect(url_for('index'))
+
 @app.route('/logout')
 @login_required
 def logout():
